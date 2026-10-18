@@ -2,110 +2,171 @@
 
 **Kullanıcı Etkileşim Verisine Dayalı Sosyal Müzik Öneri ve Analitik Sistemi**
 
-Veritabanı Sistemleri dersi (3. sınıf) dönem projesi. Kullanıcıların dinleme, beğeni, puan, atlama ve takip verilerini Microsoft SQL Server'da tutan bir müzik platformu veritabanı. Bu verilerle üç ayrı yöntemle şarkı önerisi üretiliyor: sosyal (takip edilenlerin dinledikleri), içerik tabanlı (sevilen türlere benzer şarkılar) ve işbirlikçi filtreleme (benzer zevkteki kullanıcılar). Üç öneri sonunda tek bir hibrit öneride birleşiyor. Ayrıca yıllık dinleme özeti ve trend analizi var.
+![SQL Server](https://img.shields.io/badge/SQL%20Server-2019%2B-CC2927?logo=microsoftsqlserver&logoColor=white)
+![T-SQL](https://img.shields.io/badge/dil-T--SQL-0078D4)
+![SSMS](https://img.shields.io/badge/ara%C3%A7-SSMS-5C2D91)
 
-- **Veritabanı:** Microsoft SQL Server Express (T-SQL), SSMS ile
-- **Süre:** yaklaşık 5 hafta
+Dinleme, beğeni, puanlama, atlama ve takip verilerini ilişkisel bir modelde tutan; bu veriler üzerinden kişiselleştirilmiş şarkı önerileri ve dinleme analitiği üreten bir Microsoft SQL Server veritabanı projesi. Üç farklı öneri yöntemi ayrı ayrı geliştirilir ve ağırlıklı bir hibrit modelde birleştirilir.
 
-> **Önemli:** Tablo ve sütun adları, veri tipleri, silme kuralları, nesne adları ve dosya sırası gibi ortak kurallar [`ortak_sema_sozlesmesi.md`](ortak_sema_sozlesmesi.md) dosyasında. Kod yazmadan önce bu belgeyi okuyun. Buradaki isimler gruba haber verilmeden değiştirilmez; belge ile kod çelişirse belge geçerlidir.
+Veritabanı Sistemleri dersi kapsamında geliştirilmiştir.
 
-## Ekip
+## Özellikler
 
-| Kişi | Rol | Sorumlu olduğu tablolar |
+| Özellik | Açıklama | Nesne |
 | --- | --- | --- |
-| Şeyma (Kişi A) | Kullanıcılar ve sosyal modül: takipler, yorumlar, yıllık dinleme özeti, sosyal öneri | `users`, `follows`, `comments` |
-| Beyza (Kişi B) | Katalog ve çalma listeleri: sanatçılar, albümler, türler, şarkılar, içerik tabanlı öneri, transaction | `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs` |
-| Sema (Kişi C) | Etkileşimler ve analitik: dinlemeler, beğeniler, puanlar, atlamalar, işbirlikçi filtreleme, trend analizi | `listens`, `likes`, `ratings`, `skips` |
+| Sosyal öneri | Takip edilen kullanıcıların dinledikleri şarkılar | `rec_social` |
+| İçerik tabanlı öneri | Kullanıcının sık dinlediği türlere benzer şarkılar | `rec_content` |
+| İşbirlikçi filtreleme | Benzer zevkteki kullanıcıların dinledikleri | `rec_collaborative` |
+| Hibrit öneri | Üç yöntemin ağırlıklı birleşimi (sosyal 0,3 · içerik 0,3 · işbirlikçi 0,4) | `get_recommendations` |
+| Yıllık özet | Kullanıcının yıl içindeki dinleme istatistikleri | `yearly_wrapped` |
+| Trend analizi | Son 14 günde öne çıkan şarkılar | `trending_songs` |
+| Otomatik atlama tespiti | 30 saniyeden kısa dinlemelerin atlama olarak kaydedilmesi | `trg_auto_skip` |
+| Transaction ile liste oluşturma | Çalma listesi ve şarkılarının tek işlemde eklenmesi | `create_playlist_with_songs` |
 
-## Dosyalar ve sahipleri
+## Veritabanı Şeması
 
-Her dosyayı yalnızca sahibi değiştirir.
+Sistem üç modülde toplam 13 tablodan oluşur.
 
-| Sahibi | Dosya | Durum |
+```mermaid
+erDiagram
+    users ||--o{ follows : "takip eder"
+    users ||--o{ follows : "takip edilir"
+    users ||--o{ comments : yazar
+    users ||--o{ playlists : "sahibidir"
+    users ||--o{ listens : dinler
+    users ||--o{ likes : "beğenir"
+    users ||--o{ ratings : puanlar
+    users ||--o{ skips : atlar
+    artists ||--o{ albums : "çıkarır"
+    albums ||--o{ songs : "içerir"
+    genres ||--o{ songs : "sınıflandırır"
+    songs ||--o{ comments : ""
+    songs ||--o{ playlist_songs : ""
+    playlists ||--o{ playlist_songs : "içerir"
+    songs ||--o{ listens : ""
+    songs ||--o{ likes : ""
+    songs ||--o{ ratings : ""
+    songs ||--o{ skips : ""
+    listens ||--o| skips : "atlamaya dönüşür"
+```
+
+| Modül | Tablolar |
+| --- | --- |
+| Kullanıcı ve sosyal | `users`, `follows`, `comments` |
+| Katalog ve çalma listeleri | `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs` |
+| Etkileşim ve analitik | `listens`, `likes`, `ratings`, `skips` |
+
+Tablo ve sütun adları, veri tipleri, silme kuralları ve nesne adları [`ortak_sema_sozlesmesi.md`](ortak_sema_sozlesmesi.md) belgesinde tanımlıdır. Belge ile kod arasında bir çelişki olursa belge esas alınır.
+
+## Proje Yapısı
+
+```
+muzik-oneri-sistemi/
+├── sql/
+│   ├── 01_users.sql               # users, follows
+│   ├── 02_catalog.sql             # genres, artists, albums, songs, playlists, playlist_songs
+│   ├── 03_interactions.sql        # listens, likes, ratings, skips
+│   ├── 04_comments.sql            # comments
+│   ├── 05_advanced_a.sql          # Kullanıcı modülü: view, trigger, procedure, index, öneri
+│   ├── 05_advanced_b.sql          # Katalog modülü: procedure, transaction, index, öneri
+│   ├── 05_advanced_c.sql          # Etkileşim modülü: trigger, view, index, öneri
+│   ├── 06_recommendations.sql     # Hibrit öneri
+│   └── queries/
+│       ├── users_queries.sql
+│       ├── catalog_queries.sql
+│       └── interactions_queries.sql
+├── data/                          # Veri dosyaları
+├── rapor/                         # Proje raporu
+├── sunum/                         # Sunum dosyaları
+└── ortak_sema_sozlesmesi.md       # Ortak şema sözleşmesi
+```
+
+### Dosya durumu
+
+| Dosya | Sorumlu | Durum |
 | --- | --- | --- |
-| Şeyma (A) | `sql/01_users.sql` | beklemede |
-| Şeyma (A) | `sql/04_comments.sql` | beklemede |
-| Şeyma (A) | `sql/05_advanced_a.sql` | beklemede |
-| Şeyma (A) | `sql/queries/users_queries.sql` | beklemede |
-| Beyza (B) | `sql/02_catalog.sql` | hazır |
-| Beyza (B) | `sql/05_advanced_b.sql` | beklemede |
-| Beyza (B) | `sql/queries/catalog_queries.sql` | beklemede |
-| Sema (C) | `sql/03_interactions.sql` | beklemede |
-| Sema (C) | `sql/05_advanced_c.sql` | beklemede |
-| Sema (C) | `sql/queries/interactions_queries.sql` | beklemede |
-| Ortak | `sql/06_recommendations.sql` | beklemede |
-
-Diğer klasörler: `data/` (veri dosyaları), `rapor/` (proje raporu), `sunum/` (sunum dosyaları).
-
-Bir dosyayı eklediğinizde bu tablodaki durumunu "hazır" yapın.
+| `sql/01_users.sql` | Şeyma | Geliştiriliyor |
+| `sql/02_catalog.sql` | Beyza | Tamamlandı |
+| `sql/03_interactions.sql` | Sema | Geliştiriliyor |
+| `sql/04_comments.sql` | Şeyma | Geliştiriliyor |
+| `sql/05_advanced_a.sql` | Şeyma | Geliştiriliyor |
+| `sql/05_advanced_b.sql` | Beyza | Geliştiriliyor |
+| `sql/05_advanced_c.sql` | Sema | Geliştiriliyor |
+| `sql/06_recommendations.sql` | Ortak | Geliştiriliyor |
+| `sql/queries/users_queries.sql` | Şeyma | Geliştiriliyor |
+| `sql/queries/catalog_queries.sql` | Beyza | Geliştiriliyor |
+| `sql/queries/interactions_queries.sql` | Sema | Geliştiriliyor |
 
 ## Kurulum
 
-1. SSMS'i açın, SQL Server'a bağlanın, **New Query** ile yeni bir sorgu penceresi açıp şunu çalıştırın (F5):
+### Gereksinimler
+
+- Microsoft SQL Server 2019 veya üstü (Express sürümü yeterlidir)
+- SQL Server Management Studio (SSMS)
+
+### Adımlar
+
+1. Depoyu klonlayın:
+
+   ```bash
+   git clone https://github.com/Muzik-Oneri-Sistemi/muzik-oneri-sistemi.git
+   ```
+
+2. Veritabanını Türkçe sıralamayla oluşturun:
 
    ```sql
    CREATE DATABASE muzik_db COLLATE Turkish_CI_AS;
    ```
 
-   Veritabanının adı ve sıralaması (`Turkish_CI_AS`) herkeste aynı olmalı.
+3. `sql/` klasöründeki betikleri SSMS'te aşağıdaki sırayla çalıştırın. Sıra, yabancı anahtar bağımlılıklarına göre belirlenmiştir.
 
-2. `sql/` klasöründeki dosyaları **bu sırayla** açıp (File > Open > File) F5 ile çalıştırın. Sıra yabancı anahtar bağımlılıklarından gelir; bir dosya, kendinden önceki dosyaların tablolarını kullanır.
+   | Sıra | Dosya | İçerik |
+   | --- | --- | --- |
+   | 1 | `01_users.sql` | `users`, `follows` |
+   | 2 | `02_catalog.sql` | `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs` |
+   | 3 | `03_interactions.sql` | `listens`, `likes`, `ratings`, `skips` |
+   | 4 | `04_comments.sql` | `comments` |
+   | 5 | `05_advanced_a.sql`, `05_advanced_b.sql`, `05_advanced_c.sql` | View, trigger, procedure, index ve öneri fonksiyonları |
+   | 6 | `06_recommendations.sql` | `get_recommendations` |
 
-   1. `01_users.sql` (A): `users`, `follows`
-   2. `02_catalog.sql` (B): `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs`
-   3. `03_interactions.sql` (C): `listens`, `likes`, `ratings`, `skips`
-   4. `04_comments.sql` (A): `comments`
-   5. `05_advanced_a.sql`, `05_advanced_b.sql`, `05_advanced_c.sql`: view, trigger, procedure, index ve öneri fonksiyonları
-   6. `06_recommendations.sql` (ortak): `get_recommendations`
+4. Örnek sorgular için `sql/queries/` klasöründeki dosyaları çalıştırın.
 
-3. Sorgular `sql/queries/` klasöründe; tablolar kurulduktan sonra istediğiniz sırayla çalıştırılabilir.
+## Katkı Kuralları
 
-Başkasının dosyası henüz yüklenmediyse, sözleşmedeki örnekteki gibi kendi bilgisayarınızda `gecici_` ile başlayan bir test dosyası (ör. `gecici_users.sql`) kullanın. Bu dosyalar `.gitignore` sayesinde GitHub'a yüklenmez.
+- Her ekip üyesi yalnızca kendi sorumlu olduğu dosyaları değiştirir.
+- Yüklenen her betik, boş bir veritabanında hatasız çalıştırılarak test edilmiş olmalıdır.
+- Çalışmaya başlamadan önce depo güncellenir (`git pull`).
+- Commit mesajları modül etiketiyle başlar: `[A]`, `[B]` veya `[C]`.
+  Örnek: `[C] listens tablosuna örnek veri eklendi`
+- Geçici test dosyaları (`gecici_*.sql`) depoya eklenmez.
+- Tüm çalışmalar doğrudan `main` dalında yürütülür.
+- Ortak sözleşmedeki bir ismin değişmesi için önce ekipte onay alınır, ardından sözleşme güncellenir.
 
-## Çalışma kuralları
+### Geliştirme ortamı
 
-- **Herkes yalnızca kendi dosyasını değiştirir.** Başkasının dosyasında bir sorun görürseniz ona haber verin.
-- **Çalışmayan kod yüklenmez.** Yüklemeden önce dosyanızı SSMS'te temiz bir veritabanında baştan sona çalıştırıp test edin.
-- **İşe başlamadan önce son hali çekin:** `git pull`
-- **Commit mesajları kişi harfiyle başlar:** `[A]`, `[B]` veya `[C]`. Örnek: `[C] listens tablosuna örnek veri eklendi`
-- **Geçici test dosyaları yüklenmez** (`gecici_*.sql`).
-- **Dal (branch) kullanılmaz;** herkes doğrudan `main` dalına yükler.
-
-## Ekip üyeleri için başlangıç rehberi
-
-### 1. Bir kez yapılacaklar
-
-1. **Git'i kurun:** <https://git-scm.com/download/win> adresinden indirip varsayılan seçeneklerle kurun.
-2. **Daveti kabul edin:** Ekibe davet edildiğinizde e-postanıza bir davet gelir. Bağlantıya tıklayıp **Accept invitation** deyin (ya da <https://github.com/notifications> sayfasından kabul edin).
-3. **Git'e kim olduğunuzu söyleyin.** Başlat menüsünden **Git Bash**'i (veya PowerShell'i) açıp kendi bilgilerinizle çalıştırın. E-posta, GitHub hesabınızdaki e-postayla aynı olmalı:
-
-   ```bash
-   git config --global user.name "Adınız Soyadınız"
-   git config --global user.email "github-epostaniz@ornek.com"
-   git config --global pull.rebase false
-   ```
-
-   Son satır, `git pull` sırasında iki kişinin değişikliğinin otomatik birleştirilmesini sağlar.
-
-4. **Repoyu bilgisayarınıza indirin (clone).** Repo sayfasındaki yeşil **Code** düğmesinden HTTPS bağlantısını kopyalayın. Sonra hangi klasöre indirmek istiyorsanız oraya geçip çalıştırın:
-
-   ```bash
-   cd ~/Documents
-   git clone <kopyaladiginiz-baglanti>
-   cd muzik-oneri-sistemi
-   ```
-
-   İlk seferde tarayıcıda GitHub girişi açılır; giriş yapıp izin verin.
-
-### 2. Her çalışmada
+İlk kurulumda Git kimliğinizi tanımlayın:
 
 ```bash
-git pull                          # 1. Önce son hali çek
-# 2. Dosyanızı düzenleyin, SSMS'te test edin
-git status                        # 3. Neyin değiştiğine bakın
-git add sql/03_interactions.sql   # 4. Yalnızca kendi dosyanızı ekleyin
-git commit -m "[C] listens tablosu eklendi"   # 5. Kaydedin
-git push                          # 6. GitHub'a gönderin
+git config --global user.name "github-kullanici-adiniz"
+git config --global user.email "github-hesabinizdaki-eposta"
+git config --global pull.rebase false
 ```
 
-`git push` "rejected" hatası verirse, siz çalışırken başkası bir şey yüklemiş demektir. Önce `git pull`, sonra tekrar `git push` yapın. Herkes yalnızca kendi dosyasını değiştirdiği sürece çakışma (conflict) çıkmaz; çıkarsa grupta yazın.
+Günlük çalışma akışı:
+
+```bash
+git pull                                   # Son değişiklikleri al
+git add sql/03_interactions.sql            # Yalnızca kendi dosyanı ekle
+git commit -m "[C] listens tablosu eklendi"
+git push                                   # GitHub'a gönder
+```
+
+`git push` reddedilirse önce `git pull`, ardından tekrar `git push` çalıştırın.
+
+## Ekip
+
+| Üye | Modül | Sorumlu olduğu tablolar |
+| --- | --- | --- |
+| Şeyma (A) | Kullanıcı ve sosyal modül, yıllık özet, sosyal öneri | `users`, `follows`, `comments` |
+| Beyza (B) | Katalog ve çalma listeleri, içerik tabanlı öneri, transaction | `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs` |
+| Sema (C) | Etkileşim ve analitik, işbirlikçi filtreleme, trend analizi | `listens`, `likes`, `ratings`, `skips` |
