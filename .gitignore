@@ -1,0 +1,16 @@
+# Geçici test dosyaları (ör. gecici_users.sql)
+gecici_*.sql
+
+# SQL Server yedek ve veritabanı dosyaları
+*.bak
+*.mdf
+*.ldf
+
+# Visual Studio / SSMS ayar klasörü
+.vs/
+
+# Windows küçük resim önbelleği
+Thumbs.db
+
+# Açık Word/Excel dosyalarının geçici kopyaları
+~$*
