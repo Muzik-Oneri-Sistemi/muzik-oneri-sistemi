@@ -71,22 +71,6 @@ muzik-oneri-sistemi/
 └── ortak_sema_sozlesmesi.md       # Ortak şema sözleşmesi
 ```
 
-### Dosya durumu
-
-| Dosya | Sorumlu | Durum |
-| --- | --- | --- |
-| `sql/01_users.sql` | Şeyma | Geliştiriliyor |
-| `sql/02_catalog.sql` | Beyza | Tamamlandı |
-| `sql/03_interactions.sql` | Sema | Geliştiriliyor |
-| `sql/04_comments.sql` | Şeyma | Geliştiriliyor |
-| `sql/05_advanced_a.sql` | Şeyma | Geliştiriliyor |
-| `sql/05_advanced_b.sql` | Beyza | Geliştiriliyor |
-| `sql/05_advanced_c.sql` | Sema | Geliştiriliyor |
-| `sql/06_recommendations.sql` | Ortak | Geliştiriliyor |
-| `sql/queries/users_queries.sql` | Şeyma | Geliştiriliyor |
-| `sql/queries/catalog_queries.sql` | Beyza | Geliştiriliyor |
-| `sql/queries/interactions_queries.sql` | Sema | Geliştiriliyor |
-
 ## Kurulum
 
 ### Gereksinimler
