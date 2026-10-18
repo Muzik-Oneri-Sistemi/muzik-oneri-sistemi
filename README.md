@@ -12,49 +12,39 @@ Veritabanı Sistemleri dersi kapsamında geliştirilmiştir.
 
 ## Özellikler
 
-| Özellik | Açıklama | Nesne |
-| --- | --- | --- |
-| Sosyal öneri | Takip edilen kullanıcıların dinledikleri şarkılar | `rec_social` |
-| İçerik tabanlı öneri | Kullanıcının sık dinlediği türlere benzer şarkılar | `rec_content` |
-| İşbirlikçi filtreleme | Benzer zevkteki kullanıcıların dinledikleri | `rec_collaborative` |
-| Hibrit öneri | Üç yöntemin ağırlıklı birleşimi (sosyal 0,3 · içerik 0,3 · işbirlikçi 0,4) | `get_recommendations` |
-| Yıllık özet | Kullanıcının yıl içindeki dinleme istatistikleri | `yearly_wrapped` |
-| Trend analizi | Son 14 günde öne çıkan şarkılar | `trending_songs` |
-| Otomatik atlama tespiti | 30 saniyeden kısa dinlemelerin atlama olarak kaydedilmesi | `trg_auto_skip` |
-| Transaction ile liste oluşturma | Çalma listesi ve şarkılarının tek işlemde eklenmesi | `create_playlist_with_songs` |
+| Özellik | Açıklama | Nesne | Sorumlu |
+| --- | --- | --- | --- |
+| Sosyal öneri | Takip edilen kullanıcıların dinledikleri şarkılar | `rec_social` | Şeyma |
+| Yıllık özet | Kullanıcının yıl içindeki dinleme istatistikleri | `yearly_wrapped` | Şeyma |
+| Profil özeti | Kullanıcı başına takipçi, liste ve dinleme bilgileri | `user_profile_summary` | Şeyma |
+| Takipçi sayacı | Takip eklendiğinde veya silindiğinde takipçi sayısının güncellenmesi | `trg_follower_count` | Şeyma |
+| İçerik tabanlı öneri | Kullanıcının sık dinlediği türlere benzer şarkılar | `rec_content` | Beyza |
+| Transaction ile liste oluşturma | Çalma listesi ve şarkılarının tek işlemde eklenmesi | `create_playlist_with_songs` | Beyza |
+| Listeye şarkı ekleme | Şarkının çalma listesine sıra numarasıyla eklenmesi | `add_song_to_playlist` | Beyza |
+| İşbirlikçi filtreleme | Benzer zevkteki kullanıcıların dinledikleri | `rec_collaborative` | Sema |
+| Trend analizi | Son 14 günde öne çıkan şarkılar | `trending_songs` | Sema |
+| Otomatik atlama tespiti | 30 saniyeden kısa dinlemelerin atlama olarak kaydedilmesi | `trg_auto_skip` | Sema |
+| Hibrit öneri | Üç yöntemin ağırlıklı birleşimi (sosyal 0,3 · içerik 0,3 · işbirlikçi 0,4) | `get_recommendations` | Ortak |
 
-## Veritabanı Şeması
+## Veritabanı Yapısı
 
 Sistem üç modülde toplam 13 tablodan oluşur.
 
-```mermaid
-erDiagram
-    users ||--o{ follows : "takip eder"
-    users ||--o{ follows : "takip edilir"
-    users ||--o{ comments : yazar
-    users ||--o{ playlists : "sahibidir"
-    users ||--o{ listens : dinler
-    users ||--o{ likes : "beğenir"
-    users ||--o{ ratings : puanlar
-    users ||--o{ skips : atlar
-    artists ||--o{ albums : "çıkarır"
-    albums ||--o{ songs : "içerir"
-    genres ||--o{ songs : "sınıflandırır"
-    songs ||--o{ comments : ""
-    songs ||--o{ playlist_songs : ""
-    playlists ||--o{ playlist_songs : "içerir"
-    songs ||--o{ listens : ""
-    songs ||--o{ likes : ""
-    songs ||--o{ ratings : ""
-    songs ||--o{ skips : ""
-    listens ||--o| skips : "atlamaya dönüşür"
-```
-
-| Modül | Tablolar |
-| --- | --- |
-| Kullanıcı ve sosyal | `users`, `follows`, `comments` |
-| Katalog ve çalma listeleri | `genres`, `artists`, `albums`, `songs`, `playlists`, `playlist_songs` |
-| Etkileşim ve analitik | `listens`, `likes`, `ratings`, `skips` |
+| Tablo | Açıklama | Bağlantılar | Sorumlu |
+| --- | --- | --- | --- |
+| `users` | Kullanıcı hesapları | — | Şeyma |
+| `follows` | Takip ilişkileri | `follower_id`, `followed_id` → `users` | Şeyma |
+| `comments` | Şarkı yorumları | `user_id` → `users` · `song_id` → `songs` | Şeyma |
+| `genres` | Müzik türleri | — | Beyza |
+| `artists` | Sanatçılar | — | Beyza |
+| `albums` | Albümler | `artist_id` → `artists` | Beyza |
+| `songs` | Şarkılar | `album_id` → `albums` · `genre_id` → `genres` | Beyza |
+| `playlists` | Çalma listeleri | `owner_id` → `users` | Beyza |
+| `playlist_songs` | Liste ve şarkı eşleşmeleri | `playlist_id` → `playlists` · `song_id` → `songs` | Beyza |
+| `listens` | Dinleme kayıtları | `user_id` → `users` · `song_id` → `songs` | Sema |
+| `likes` | Beğeniler | `user_id` → `users` · `song_id` → `songs` | Sema |
+| `ratings` | 1–5 arası puanlar | `user_id` → `users` · `song_id` → `songs` | Sema |
+| `skips` | Atlanan dinlemeler | `listen_id` → `listens` · `user_id` → `users` · `song_id` → `songs` | Sema |
 
 Tablo ve sütun adları, veri tipleri, silme kuralları ve nesne adları [`ortak_sema_sozlesmesi.md`](ortak_sema_sozlesmesi.md) belgesinde tanımlıdır. Belge ile kod arasında bir çelişki olursa belge esas alınır.
 
