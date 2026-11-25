@@ -2,15 +2,17 @@ USE muzik_db;
 GO
 
 DECLARE @i INT = 1;
+DECLARE @r INT;
 WHILE @i <= 50
 BEGIN
+    SET @r = 1 + ABS(CHECKSUM(NEWID())) % 5;
     INSERT INTO Users (username, email, password_hash, birth_date, country)
     VALUES (
         CONCAT('kullanici', @i),
         CONCAT('kullanici', @i, '@mail.com'),
         'sahte_hash_abc123',
         DATEADD(DAY, -(7000 + ABS(CHECKSUM(NEWID())) % 6000), CAST(GETDATE() AS DATE)),
-        CHOOSE(1 + ABS(CHECKSUM(NEWID())) % 5, N'Türkiye', N'Almanya', N'ABD', N'Fransa', N'Japonya')
+        CHOOSE(@r, N'Türkiye', N'Almanya', N'ABD', N'Fransa', N'Japonya')
     );
     SET @i += 1;
 END;

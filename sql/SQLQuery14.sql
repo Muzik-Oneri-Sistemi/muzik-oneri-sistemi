@@ -1,1 +1,0 @@
-SELECT COUNT(*) AS yorum_sayisi, MAX(comment_id) AS son_id FROM Comments;
