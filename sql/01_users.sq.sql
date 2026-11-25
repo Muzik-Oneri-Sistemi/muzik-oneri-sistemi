@@ -1,4 +1,4 @@
-USE MuzikDB;
+USE muzik_db;
 GO
 
 CREATE TABLE Users (
